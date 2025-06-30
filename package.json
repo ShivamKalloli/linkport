@@ -3,6 +3,22 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "description": "Convert music playlists between streaming platforms instantly, no login required",
+  "author": "Shivam Kalloli",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ShivamKalloli/linkport.git"
+  },
+  "homepage": "https://linkport.netlify.app",
+  "keywords": [
+    "playlist",
+    "music",
+    "converter",
+    "spotify",
+    "youtube",
+    "soundcloud",
+    "streaming"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
