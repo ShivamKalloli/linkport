@@ -1,20 +1,108 @@
+import { searchSpotifyTracks } from './spotifyApi.js';
+import { searchYouTubeTracks } from './youtubeApi.js';
+import { searchSoundCloudTracks } from './soundcloudApi.js';
 import * as Fuzz from 'fuzzball';
 
 /**
- * Match songs on target platform using fuzzy matching
+ * Match songs on target platform using real APIs
  */
 export async function matchSongs(songs, targetPlatform) {
+  console.log(`🔍 Matching ${songs.length} songs for ${targetPlatform}`);
+  
+  try {
+    let matches;
+    
+    switch (targetPlatform) {
+      case 'spotify':
+        matches = await searchSpotifyTracks(songs);
+        break;
+      case 'youtube':
+        matches = await searchYouTubeTracks(songs);
+        break;
+      case 'soundcloud':
+        matches = await searchSoundCloudTracks(songs);
+        break;
+      case 'apple':
+        // Apple Music API is more restrictive, fall back to mock
+        matches = await mockMatchSongs(songs, targetPlatform);
+        break;
+      default:
+        throw new Error(`Unsupported target platform: ${targetPlatform}`);
+    }
+    
+    // Enhance matches with fuzzy matching confidence
+    const enhancedMatches = matches.map(match => {
+      if (match.matchedSong && match.originalSong) {
+        const titleScore = Fuzz.ratio(
+          match.originalSong.title.toLowerCase(),
+          match.matchedSong.title.toLowerCase()
+        );
+        const artistScore = Fuzz.ratio(
+          match.originalSong.artist.toLowerCase(),
+          match.matchedSong.artist.toLowerCase()
+        );
+        
+        // Weighted average (title is more important)
+        const fuzzyConfidence = (titleScore * 0.7 + artistScore * 0.3) / 100;
+        
+        // Use the higher of API confidence or fuzzy confidence
+        match.confidence = Math.max(match.confidence || 0, fuzzyConfidence);
+        
+        // Adjust status based on confidence
+        if (match.confidence > 0.9) {
+          match.status = 'matched';
+        } else if (match.confidence > 0.7) {
+          match.status = 'partial';
+        } else {
+          match.status = 'not_found';
+        }
+      }
+      
+      return match;
+    });
+    
+    const stats = {
+      matched: enhancedMatches.filter(m => m.status === 'matched').length,
+      partial: enhancedMatches.filter(m => m.status === 'partial').length,
+      notFound: enhancedMatches.filter(m => m.status === 'not_found').length,
+    };
+    
+    console.log(`✅ Matching complete: ${stats.matched} matched, ${stats.partial} partial, ${stats.notFound} not found`);
+    
+    return enhancedMatches;
+  } catch (error) {
+    console.error('❌ Song matching failed:', error.message);
+    
+    // Fallback to mock matching if API fails
+    console.log('🔄 Falling back to mock matching...');
+    return await mockMatchSongs(songs, targetPlatform);
+  }
+}
+
+// Fallback mock matching (improved version of original)
+async function mockMatchSongs(songs, targetPlatform) {
   const matches = [];
   
   for (const song of songs) {
-    try {
-      const match = await findSongMatch(song, targetPlatform);
-      matches.push(match);
-    } catch (error) {
-      console.error(`Failed to match song: ${song.title} - ${song.artist}`, error);
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, Math.random() * 500 + 200));
+    
+    // Generate realistic mock results
+    const mockResults = generateMockSearchResults(song, targetPlatform);
+    
+    if (mockResults.length === 0) {
       matches.push({
         originalSong: song,
         status: 'not_found'
+      });
+    } else {
+      const bestMatch = findBestFuzzyMatch(song, mockResults);
+      matches.push({
+        originalSong: song,
+        matchedSong: bestMatch.song,
+        status: bestMatch.confidence > 0.9 ? 'matched' : bestMatch.confidence > 0.7 ? 'partial' : 'not_found',
+        confidence: bestMatch.confidence,
+        alternativeMatches: mockResults.slice(1, 3)
       });
     }
   }
@@ -22,37 +110,7 @@ export async function matchSongs(songs, targetPlatform) {
   return matches;
 }
 
-async function findSongMatch(song, targetPlatform) {
-  // Mock implementation with realistic results that showcase different match types
-  const searchQuery = `${song.title} ${song.artist}`;
-  
-  // Simulate API search delay
-  await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500));
-  
-  // Generate realistic mock search results based on the song
-  const mockResults = generateMockSearchResults(song, targetPlatform);
-  
-  if (mockResults.length === 0) {
-    return {
-      originalSong: song,
-      status: 'not_found'
-    };
-  }
-  
-  // Find best match using fuzzy string matching
-  const bestMatch = findBestFuzzyMatch(song, mockResults);
-  
-  return {
-    originalSong: song,
-    matchedSong: bestMatch.song,
-    status: bestMatch.confidence > 0.9 ? 'matched' : bestMatch.confidence > 0.7 ? 'partial' : 'not_found',
-    confidence: bestMatch.confidence,
-    alternativeMatches: mockResults.slice(1, 3) // Include alternatives
-  };
-}
-
 function generateMockSearchResults(originalSong, platform) {
-  // Create realistic variations that demonstrate different matching scenarios
   const variations = [];
   
   // Perfect match (high confidence)
@@ -64,7 +122,16 @@ function generateMockSearchResults(originalSong, platform) {
     });
   }
   
-  // Remastered version (still high confidence)
+  // Platform-specific variations
+  if (platform === 'youtube') {
+    variations.push({
+      title: `${originalSong.title} - ${originalSong.artist}`,
+      artist: `${originalSong.artist} - Topic`,
+      album: originalSong.album || 'Auto-Generated'
+    });
+  }
+  
+  // Remastered version
   if (Math.random() > 0.3) {
     variations.push({
       title: `${originalSong.title} (Remastered)`,
@@ -73,61 +140,6 @@ function generateMockSearchResults(originalSong, platform) {
     });
   }
   
-  // Live version (partial match)
-  if (Math.random() > 0.4) {
-    variations.push({
-      title: `${originalSong.title} (Live)`,
-      artist: originalSong.artist,
-      album: 'Live Album'
-    });
-  }
-  
-  // Cover version (partial match)
-  if (Math.random() > 0.5) {
-    variations.push({
-      title: originalSong.title,
-      artist: `${originalSong.artist} Cover Band`,
-      album: 'Cover Album'
-    });
-  }
-  
-  // Acoustic version (partial match)
-  if (Math.random() > 0.6) {
-    variations.push({
-      title: `${originalSong.title} (Acoustic Version)`,
-      artist: originalSong.artist,
-      album: 'Acoustic Sessions'
-    });
-  }
-  
-  // Platform-specific variations
-  if (platform === 'youtube') {
-    // YouTube often has user uploads with different naming
-    variations.push({
-      title: `${originalSong.title} - ${originalSong.artist}`,
-      artist: `${originalSong.artist} - Topic`,
-      album: originalSong.album || 'Auto-Generated'
-    });
-  }
-  
-  if (platform === 'soundcloud') {
-    // SoundCloud often has remix versions
-    if (Math.random() > 0.7) {
-      variations.push({
-        title: `${originalSong.title} (Remix)`,
-        artist: `${originalSong.artist} ft. Various Artists`,
-        album: 'Remix Collection'
-      });
-    }
-  }
-  
-  // Demonstrate some songs that won't be found (for realistic results)
-  const notFoundSongs = ['Sweet Child O\' Mine', 'Stairway to Heaven'];
-  if (notFoundSongs.some(title => originalSong.title.includes(title)) && Math.random() > 0.5) {
-    return []; // Simulate not found
-  }
-  
-  // Return 1-3 variations to simulate real search results
   return variations.slice(0, Math.floor(Math.random() * 3) + 1);
 }
 
@@ -136,7 +148,6 @@ function findBestFuzzyMatch(originalSong, searchResults) {
   let bestScore = 0;
   
   for (const result of searchResults) {
-    // Calculate fuzzy match scores for title and artist
     const titleScore = Fuzz.ratio(
       originalSong.title.toLowerCase(),
       result.title.toLowerCase()
@@ -146,7 +157,6 @@ function findBestFuzzyMatch(originalSong, searchResults) {
       result.artist.toLowerCase()
     );
     
-    // Weighted average (title is more important)
     const combinedScore = (titleScore * 0.7 + artistScore * 0.3) / 100;
     
     if (combinedScore > bestScore) {

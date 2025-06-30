@@ -38,7 +38,8 @@
     "qrcode": "^1.5.3",
     "fuzzball": "^2.1.2",
     "uuid": "^9.0.1",
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "dotenv": "^16.3.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
