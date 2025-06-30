@@ -6,6 +6,7 @@ import ConversionProgress from './components/ConversionProgress';
 import ConversionResults from './components/ConversionResults';
 import Footer from './components/Footer';
 import { ConversionState } from './types';
+import { mockConvertPlaylist } from './services/mockApi';
 
 function App() {
   const [conversionState, setConversionState] = useState<ConversionState>({
@@ -28,21 +29,8 @@ function App() {
     });
 
     try {
-      // Call the backend API
-      const response = await fetch('/api/convert', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ sourceUrl, targetPlatform }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.details || errorData.error || 'Conversion failed');
-      }
-
-      const data = await response.json();
+      // Use mock API for Netlify deployment
+      const data = await mockConvertPlaylist(sourceUrl, targetPlatform);
       
       setConversionState({
         ...conversionState,
@@ -59,11 +47,6 @@ function App() {
         errorMessage = error.message;
       } else if (typeof error === 'string') {
         errorMessage = error;
-      }
-      
-      // Handle network errors
-      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
-        errorMessage = 'Network error: Unable to connect to the server. Please check your internet connection and try again.';
       }
       
       setConversionState({
@@ -133,11 +116,11 @@ function App() {
                   <div className="text-left bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-6 max-w-2xl mx-auto">
                     <h3 className="text-lg font-semibold text-blue-400 mb-2">💡 Troubleshooting Tips:</h3>
                     <ul className="text-sm text-gray-300 space-y-1">
-                      <li>• Make sure the playlist is <strong>public</strong> and accessible</li>
+                      <li>• Make sure the playlist URL is from a supported platform</li>
                       <li>• Copy the URL directly from the streaming platform</li>
-                      <li>• Check that your API keys are correctly configured</li>
                       <li>• Try with a different public playlist to test</li>
-                      <li>• Restart the server if you recently updated API keys</li>
+                      <li>• Check that the URL format is correct</li>
+                      <li>• This demo uses mock data for demonstration purposes</li>
                     </ul>
                   </div>
                   

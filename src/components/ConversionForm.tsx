@@ -227,7 +227,7 @@ const ConversionForm: React.FC<ConversionFormProps> = ({ onStartConversion }) =>
           
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-400">
-              🎵 <strong>Demo Mode:</strong> Currently using mock data for all conversions. Real API integration coming soon!
+              🎵 <strong>Demo Mode:</strong> Currently using mock data for all conversions. Perfect for showcasing the user experience!
             </p>
           </div>
         </div>
