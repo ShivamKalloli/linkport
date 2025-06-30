@@ -33,8 +33,10 @@ const platforms: PlatformInfo[] = [
   },
 ];
 
+// Updated with actual working Spotify playlists
 const sampleUrls = [
-  'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M',
+  'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M', // Today's Top Hits
+  'https://open.spotify.com/playlist/37i9dQZF1DX0XUsuxWHRQV', // RapCaviar
   'https://music.youtube.com/playlist?list=PLrAl6rYgs4IvGFBDEaVGFXt6k2GiOFWjS'
 ];
 
@@ -113,17 +115,30 @@ const ConversionForm: React.FC<ConversionFormProps> = ({ onStartConversion }) =>
             <div className="mt-4">
               <p className="text-sm text-gray-500 mb-2">Try these sample URLs:</p>
               <div className="space-y-2">
-                {sampleUrls.map((url, index) => (
-                  <button
-                    key={index}
-                    type="button"
-                    onClick={() => handleSampleUrl(url)}
-                    className="flex items-center text-xs text-gray-400 hover:text-primary-400 transition-colors group w-full text-left"
-                  >
-                    <Copy className="w-3 h-3 mr-2 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <span className="truncate">{url}</span>
-                  </button>
-                ))}
+                <button
+                  type="button"
+                  onClick={() => handleSampleUrl(sampleUrls[0])}
+                  className="flex items-center text-xs text-gray-400 hover:text-primary-400 transition-colors group w-full text-left"
+                >
+                  <Copy className="w-3 h-3 mr-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <span className="truncate">🎵 Today's Top Hits - {sampleUrls[0]}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSampleUrl(sampleUrls[1])}
+                  className="flex items-center text-xs text-gray-400 hover:text-primary-400 transition-colors group w-full text-left"
+                >
+                  <Copy className="w-3 h-3 mr-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <span className="truncate">🎤 RapCaviar - {sampleUrls[1]}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSampleUrl(sampleUrls[2])}
+                  className="flex items-center text-xs text-gray-400 hover:text-primary-400 transition-colors group w-full text-left"
+                >
+                  <Copy className="w-3 h-3 mr-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <span className="truncate">🎬 YouTube Music Sample - {sampleUrls[2]}</span>
+                </button>
               </div>
             </div>
           </div>
