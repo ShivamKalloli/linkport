@@ -24,8 +24,13 @@ cp .env.example .env
 3. Fill in app details:
    - **App Name**: LinkPort
    - **App Description**: Playlist converter
-   - **Redirect URI**: `http://localhost:3001/callback` (not used but required)
-4. Copy your **Client ID** and **Client Secret**
+   - **Redirect URI**: `http://127.0.0.1:3001/callback`
+   - **Which API/SDKs are you planning to use?**: Check "Web API"
+4. Accept the Developer Terms of Service and Design Guidelines
+5. Click "Save"
+6. Copy your **Client ID** and **Client Secret**
+
+> **Important**: Use `http://127.0.0.1:3001/callback` instead of `localhost` as Spotify no longer accepts `localhost` in redirect URIs. You can safely ignore the "This redirect URI is not secure" warning for local development.
 
 #### 🎬 YouTube Data API
 1. Go to [Google Cloud Console](https://console.developers.google.com)
@@ -111,6 +116,12 @@ https://soundcloud.com/discover/sets/weekly
 
 ## ⚠️ Important Notes
 
+### Spotify Redirect URI Requirements
+- **Must use**: `http://127.0.0.1:3001/callback`
+- **Cannot use**: `http://localhost:3001/callback` (no longer supported)
+- The redirect URI is required by Spotify but not actually used by LinkPort
+- You can safely ignore security warnings for local development
+
 ### API Limits & Quotas
 - **Spotify**: 100 requests per minute
 - **YouTube**: 10,000 units per day (default)
@@ -134,6 +145,7 @@ LinkPort includes built-in rate limiting to respect API quotas:
 - Double-check your API keys in `.env`
 - Make sure there are no extra spaces or quotes
 - Restart the server after changing `.env`
+- For Spotify: Ensure you're using `127.0.0.1` in the redirect URI
 
 ### "Quota exceeded" errors
 - You've hit the daily API limit
@@ -144,6 +156,11 @@ LinkPort includes built-in rate limiting to respect API quotas:
 - Make sure the playlist is public
 - Check the URL format is correct
 - Some playlists may be region-restricted
+
+### Spotify "Invalid redirect URI" errors
+- Make sure you're using `http://127.0.0.1:3001/callback` exactly
+- Check for typos in the Spotify Developer Dashboard
+- Save the settings after adding the redirect URI
 
 ## 🔄 Fallback Behavior
 
@@ -162,8 +179,9 @@ For production deployment:
 
 1. Set environment variables in your hosting platform
 2. Use production API keys (not development keys)
-3. Consider implementing Redis for caching to reduce API calls
-4. Monitor API usage and set up alerts for quota limits
+3. Update redirect URIs to use your production domain
+4. Consider implementing Redis for caching to reduce API calls
+5. Monitor API usage and set up alerts for quota limits
 
 ---
 
