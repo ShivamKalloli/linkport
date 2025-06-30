@@ -293,23 +293,48 @@ export async function searchSpotifyTracks(songs) {
 function extractSpotifyPlaylistId(url) {
   console.log('🔍 Extracting playlist ID from URL:', url);
   
-  // Handle various Spotify URL formats
+  // Clean the URL first - remove any trailing parameters after the playlist ID
+  let cleanUrl = url.trim();
+  
+  // Handle various Spotify URL formats with more comprehensive patterns
   const patterns = [
-    /spotify\.com\/playlist\/([a-zA-Z0-9]+)/,  // Standard web URL
-    /open\.spotify\.com\/playlist\/([a-zA-Z0-9]+)/, // Open Spotify URL
-    /spotify:playlist:([a-zA-Z0-9]+)/, // Spotify URI
+    // Standard web URLs
+    /(?:https?:\/\/)?(?:open\.)?spotify\.com\/playlist\/([a-zA-Z0-9]+)/i,
+    // Spotify URIs
+    /spotify:playlist:([a-zA-Z0-9]+)/i,
+    // Mobile share URLs
+    /(?:https?:\/\/)?spotify\.link\/([a-zA-Z0-9]+)/i,
+    // Any URL containing playlist ID pattern
+    /playlist[\/:]([a-zA-Z0-9]+)/i,
   ];
   
   for (let i = 0; i < patterns.length; i++) {
     const pattern = patterns[i];
     console.log(`🔍 Trying pattern ${i + 1}:`, pattern.toString());
-    const match = url.match(pattern);
-    if (match) {
+    const match = cleanUrl.match(pattern);
+    if (match && match[1]) {
       console.log('✅ Pattern matched! Extracted ID:', match[1]);
-      return match[1];
+      
+      // Validate the extracted ID (Spotify playlist IDs are typically 22 characters)
+      const playlistId = match[1];
+      if (playlistId.length >= 10 && playlistId.length <= 30) {
+        console.log('✅ Playlist ID validation passed:', playlistId);
+        return playlistId;
+      } else {
+        console.log('⚠️ Playlist ID failed validation (length):', playlistId);
+      }
     }
   }
   
+  // Try to extract any alphanumeric string that could be a playlist ID
+  console.log('🔍 Attempting fallback extraction...');
+  const fallbackMatch = cleanUrl.match(/([a-zA-Z0-9]{15,25})/);
+  if (fallbackMatch) {
+    console.log('✅ Fallback extraction found:', fallbackMatch[1]);
+    return fallbackMatch[1];
+  }
+  
   console.log('❌ No pattern matched for URL:', url);
+  console.log('❌ Cleaned URL was:', cleanUrl);
   return null;
 }
