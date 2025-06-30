@@ -9,10 +9,12 @@ let tokenExpiry = null;
  */
 async function getSpotifyToken() {
   if (spotifyToken && tokenExpiry && Date.now() < tokenExpiry) {
+    console.log('🔄 Using cached Spotify token');
     return spotifyToken;
   }
 
   try {
+    console.log('🔑 Requesting new Spotify token...');
     const credentials = Buffer.from(
       `${apiKeys.spotify.clientId}:${apiKeys.spotify.clientSecret}`
     ).toString('base64');
@@ -31,7 +33,8 @@ async function getSpotifyToken() {
     spotifyToken = response.data.access_token;
     tokenExpiry = Date.now() + (response.data.expires_in * 1000) - 60000; // 1 minute buffer
 
-    console.log('✅ Spotify token obtained');
+    console.log('✅ Spotify token obtained successfully');
+    console.log('🕒 Token expires in:', Math.round((tokenExpiry - Date.now()) / 1000), 'seconds');
     return spotifyToken;
   } catch (error) {
     console.error('❌ Failed to get Spotify token:');
@@ -46,48 +49,67 @@ async function getSpotifyToken() {
  * Parse Spotify playlist using real API
  */
 export async function parseSpotifyPlaylist(url) {
+  console.log('🎵 Starting Spotify playlist parsing...');
+  console.log('📝 Input URL:', url);
+  
   try {
-    console.log('🔍 Parsing Spotify URL:', url);
-    
+    // Step 1: Extract playlist ID
+    console.log('🔍 Step 1: Extracting playlist ID from URL...');
     const playlistId = extractSpotifyPlaylistId(url);
+    
     if (!playlistId) {
-      console.error('❌ Invalid Spotify playlist URL format:', url);
+      console.error('❌ Failed to extract playlist ID from URL:', url);
       throw new Error('Invalid Spotify playlist URL format. Please use a valid Spotify playlist URL like: https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M');
     }
 
-    console.log('📋 Extracted playlist ID:', playlistId);
+    console.log('✅ Extracted playlist ID:', playlistId);
 
+    // Step 2: Get authentication token
+    console.log('🔍 Step 2: Getting Spotify authentication token...');
     const token = await getSpotifyToken();
+    console.log('✅ Token obtained, length:', token.length);
     
-    // Get playlist details
-    console.log('🔄 Fetching playlist details from Spotify API...');
-    console.log('🔗 Request URL:', `https://api.spotify.com/v1/playlists/${playlistId}`);
+    // Step 3: Make API request
+    console.log('🔍 Step 3: Making API request to Spotify...');
+    const apiUrl = `https://api.spotify.com/v1/playlists/${playlistId}`;
+    console.log('🔗 API URL:', apiUrl);
     
-    const playlistResponse = await axios.get(
-      `https://api.spotify.com/v1/playlists/${playlistId}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        params: {
-          fields: 'name,description,tracks.items(track(name,artists(name),album(name),duration_ms)),tracks.total,public',
-        },
-      }
-    );
+    const requestConfig = {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      params: {
+        fields: 'name,description,tracks.items(track(name,artists(name),album(name),duration_ms)),tracks.total,public',
+      },
+    };
+    
+    console.log('📋 Request headers:', requestConfig.headers);
+    console.log('📋 Request params:', requestConfig.params);
+    
+    console.log('⏳ Sending request to Spotify API...');
+    const playlistResponse = await axios.get(apiUrl, requestConfig);
+    
+    console.log('✅ Spotify API response received');
+    console.log('📊 Response status:', playlistResponse.status);
+    console.log('📊 Response headers:', playlistResponse.headers);
 
     const playlist = playlistResponse.data;
-    console.log('📊 Playlist found:', {
-      name: playlist.name,
-      totalTracks: playlist.tracks.total,
-      isPublic: playlist.public
-    });
+    console.log('📋 Playlist data received:');
+    console.log('  - Name:', playlist.name);
+    console.log('  - Total tracks:', playlist.tracks?.total);
+    console.log('  - Is public:', playlist.public);
+    console.log('  - Description:', playlist.description?.substring(0, 100) + '...');
     
     // Handle pagination for large playlists
     let allTracks = playlist.tracks.items;
     let nextUrl = playlist.tracks.next;
     
+    console.log('📄 Initial tracks loaded:', allTracks.length);
+    
     while (nextUrl && allTracks.length < 100) { // Limit to 100 songs for demo
-      console.log('📄 Fetching additional tracks...');
+      console.log('📄 Fetching additional tracks from:', nextUrl);
       const nextResponse = await axios.get(nextUrl, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -96,21 +118,37 @@ export async function parseSpotifyPlaylist(url) {
       
       allTracks = allTracks.concat(nextResponse.data.items);
       nextUrl = nextResponse.data.next;
+      console.log('📄 Total tracks now:', allTracks.length);
     }
 
     // Convert to our format
+    console.log('🔄 Converting tracks to internal format...');
     const songs = allTracks
-      .filter(item => item.track && item.track.name) // Filter out null tracks
-      .map(item => ({
-        title: item.track.name,
-        artist: item.track.artists.map(artist => artist.name).join(', '),
-        album: item.track.album?.name || 'Unknown Album',
-        duration: Math.round(item.track.duration_ms / 1000),
-      }));
+      .filter(item => {
+        if (!item.track || !item.track.name) {
+          console.log('⚠️ Skipping null/invalid track:', item);
+          return false;
+        }
+        return true;
+      })
+      .map((item, index) => {
+        const song = {
+          title: item.track.name,
+          artist: item.track.artists.map(artist => artist.name).join(', '),
+          album: item.track.album?.name || 'Unknown Album',
+          duration: Math.round(item.track.duration_ms / 1000),
+        };
+        
+        if (index < 3) { // Log first 3 songs for debugging
+          console.log(`🎵 Song ${index + 1}:`, song);
+        }
+        
+        return song;
+      });
 
-    console.log(`✅ Parsed Spotify playlist: "${playlist.name}" with ${songs.length} songs`);
+    console.log(`✅ Successfully parsed Spotify playlist: "${playlist.name}" with ${songs.length} songs`);
 
-    return {
+    const result = {
       title: playlist.name,
       description: playlist.description || '',
       platform: 'spotify',
@@ -118,36 +156,59 @@ export async function parseSpotifyPlaylist(url) {
       songs: songs,
       totalDuration: songs.reduce((total, song) => total + (song.duration || 0), 0),
     };
+    
+    console.log('📦 Final result object created');
+    return result;
+    
   } catch (error) {
-    console.error('❌ Spotify API error details:');
-    console.error('HTTP Status Code:', error.response?.status);
-    console.error('HTTP Status Text:', error.response?.statusText);
-    console.error('Response Headers:', error.response?.headers);
-    console.error('Response Data:', JSON.stringify(error.response?.data, null, 2));
-    console.error('Request Config:', {
-      url: error.config?.url,
-      method: error.config?.method,
-      headers: error.config?.headers
-    });
-    console.error('Error Message:', error.message);
+    console.error('❌ ERROR OCCURRED IN parseSpotifyPlaylist:');
+    console.error('❌ Error type:', error.constructor.name);
+    console.error('❌ Error message:', error.message);
+    
+    if (error.response) {
+      console.error('❌ HTTP Response Error Details:');
+      console.error('  - Status Code:', error.response.status);
+      console.error('  - Status Text:', error.response.statusText);
+      console.error('  - Response Headers:', JSON.stringify(error.response.headers, null, 2));
+      console.error('  - Response Data:', JSON.stringify(error.response.data, null, 2));
+    }
+    
+    if (error.request) {
+      console.error('❌ HTTP Request Details:');
+      console.error('  - Request URL:', error.config?.url);
+      console.error('  - Request Method:', error.config?.method);
+      console.error('  - Request Headers:', JSON.stringify(error.config?.headers, null, 2));
+    }
+    
+    console.error('❌ Full error object:', error);
     
     const playlistId = extractSpotifyPlaylistId(url);
-    console.error('❌ Playlist ID that failed:', playlistId);
-    console.error('❌ Full URL that failed:', url);
+    console.error('❌ Failed playlist ID:', playlistId);
+    console.error('❌ Failed URL:', url);
     
+    // Provide specific error messages based on the error type
     if (error.response?.status === 404) {
-      throw new Error(`Spotify playlist not found (HTTP 404). This could mean:
+      const errorMsg = `Spotify playlist not found (HTTP 404).
+
+Playlist ID: ${playlistId}
+URL: ${url}
+
+This could mean:
 • The playlist is private or deleted
-• The URL is incorrect or malformed
+• The URL is incorrect or malformed  
 • The playlist ID "${playlistId}" doesn't exist
 • You don't have permission to access this playlist
 
 Please ensure:
-1. The playlist is public
+1. The playlist is PUBLIC (not private)
 2. The URL is correct and complete
 3. Try copying the URL directly from Spotify
+4. Test with a known public playlist
 
-Example of a valid URL: https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M`);
+Example of a valid URL: https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M`;
+      
+      console.error('❌ Detailed 404 error explanation:', errorMsg);
+      throw new Error(errorMsg);
     } else if (error.response?.status === 401) {
       throw new Error('Spotify authentication failed (HTTP 401). Please check your API credentials in the .env file and restart the server.');
     } else if (error.response?.status === 403) {
@@ -230,6 +291,8 @@ export async function searchSpotifyTracks(songs) {
 }
 
 function extractSpotifyPlaylistId(url) {
+  console.log('🔍 Extracting playlist ID from URL:', url);
+  
   // Handle various Spotify URL formats
   const patterns = [
     /spotify\.com\/playlist\/([a-zA-Z0-9]+)/,  // Standard web URL
@@ -237,12 +300,16 @@ function extractSpotifyPlaylistId(url) {
     /spotify:playlist:([a-zA-Z0-9]+)/, // Spotify URI
   ];
   
-  for (const pattern of patterns) {
+  for (let i = 0; i < patterns.length; i++) {
+    const pattern = patterns[i];
+    console.log(`🔍 Trying pattern ${i + 1}:`, pattern.toString());
     const match = url.match(pattern);
     if (match) {
+      console.log('✅ Pattern matched! Extracted ID:', match[1]);
       return match[1];
     }
   }
   
+  console.log('❌ No pattern matched for URL:', url);
   return null;
 }
