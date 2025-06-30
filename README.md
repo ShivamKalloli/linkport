@@ -58,12 +58,18 @@ cd linkport
 # Install dependencies
 npm install
 
-# Start development server
-npm run dev
+# Set up environment variables (optional for demo mode)
+cp .env.example .env
+# Edit .env with your API keys (see API_SETUP.md for details)
 
-# Build for production
+# Start both backend and frontend servers
+npm run start
+
+# For production build only
 npm run build
 ```
+
+**Important:** Use `npm run start` to run the full application with both backend and frontend servers. The `npm run dev` command only starts the frontend and will cause connection errors.
 
 ## 🎯 How It Works
 
