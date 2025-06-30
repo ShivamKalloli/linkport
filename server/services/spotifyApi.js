@@ -44,14 +44,20 @@ async function getSpotifyToken() {
  */
 export async function parseSpotifyPlaylist(url) {
   try {
+    console.log('🔍 Parsing Spotify URL:', url);
+    
     const playlistId = extractSpotifyPlaylistId(url);
     if (!playlistId) {
-      throw new Error('Invalid Spotify playlist URL');
+      console.error('❌ Invalid Spotify playlist URL format:', url);
+      throw new Error('Invalid Spotify playlist URL format. Please use a valid Spotify playlist URL like: https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M');
     }
+
+    console.log('📋 Extracted playlist ID:', playlistId);
 
     const token = await getSpotifyToken();
     
     // Get playlist details
+    console.log('🔄 Fetching playlist details from Spotify API...');
     const playlistResponse = await axios.get(
       `https://api.spotify.com/v1/playlists/${playlistId}`,
       {
@@ -59,18 +65,24 @@ export async function parseSpotifyPlaylist(url) {
           'Authorization': `Bearer ${token}`,
         },
         params: {
-          fields: 'name,description,tracks.items(track(name,artists(name),album(name),duration_ms)),tracks.total',
+          fields: 'name,description,tracks.items(track(name,artists(name),album(name),duration_ms)),tracks.total,public',
         },
       }
     );
 
     const playlist = playlistResponse.data;
+    console.log('📊 Playlist found:', {
+      name: playlist.name,
+      totalTracks: playlist.tracks.total,
+      isPublic: playlist.public
+    });
     
     // Handle pagination for large playlists
     let allTracks = playlist.tracks.items;
     let nextUrl = playlist.tracks.next;
     
     while (nextUrl && allTracks.length < 100) { // Limit to 100 songs for demo
+      console.log('📄 Fetching additional tracks...');
       const nextResponse = await axios.get(nextUrl, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -105,9 +117,28 @@ export async function parseSpotifyPlaylist(url) {
     console.error('❌ Spotify API error:', error.response?.data || error.message);
     
     if (error.response?.status === 404) {
-      throw new Error('Playlist not found. Make sure the playlist is public or the URL is correct.');
+      const playlistId = extractSpotifyPlaylistId(url);
+      console.error('❌ Playlist ID that failed:', playlistId);
+      console.error('❌ Full URL that failed:', url);
+      
+      throw new Error(`Spotify playlist not found. This could mean:
+• The playlist is private or deleted
+• The URL is incorrect or malformed
+• The playlist ID "${playlistId}" doesn't exist
+• You don't have permission to access this playlist
+
+Please ensure:
+1. The playlist is public
+2. The URL is correct and complete
+3. Try copying the URL directly from Spotify
+
+Example of a valid URL: https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M`);
     } else if (error.response?.status === 401) {
-      throw new Error('Spotify authentication failed. Please check your API credentials.');
+      throw new Error('Spotify authentication failed. Please check your API credentials in the .env file and restart the server.');
+    } else if (error.response?.status === 403) {
+      throw new Error('Access forbidden. Your Spotify API credentials may not have the required permissions.');
+    } else if (error.response?.status === 429) {
+      throw new Error('Spotify API rate limit exceeded. Please wait a moment and try again.');
     } else {
       throw new Error(`Failed to parse Spotify playlist: ${error.message}`);
     }
@@ -182,6 +213,19 @@ export async function searchSpotifyTracks(songs) {
 }
 
 function extractSpotifyPlaylistId(url) {
-  const match = url.match(/playlist\/([a-zA-Z0-9]+)/);
-  return match ? match[1] : null;
+  // Handle various Spotify URL formats
+  const patterns = [
+    /spotify\.com\/playlist\/([a-zA-Z0-9]+)/,  // Standard web URL
+    /open\.spotify\.com\/playlist\/([a-zA-Z0-9]+)/, // Open Spotify URL
+    /spotify:playlist:([a-zA-Z0-9]+)/, // Spotify URI
+  ];
+  
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) {
+      return match[1];
+    }
+  }
+  
+  return null;
 }

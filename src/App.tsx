@@ -51,10 +51,25 @@ function App() {
       });
     } catch (error) {
       console.error('Conversion error:', error);
+      
+      // Extract more meaningful error messages
+      let errorMessage = 'An unknown error occurred';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      // Handle network errors
+      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
+        errorMessage = 'Network error: Unable to connect to the server. Please check your internet connection and try again.';
+      }
+      
       setConversionState({
         ...conversionState,
         status: 'error',
-        error: error instanceof Error ? error.message : 'An unknown error occurred',
+        error: errorMessage,
       });
     }
   };
@@ -106,11 +121,26 @@ function App() {
           
           {conversionState.status === 'error' && (
             <div className="container mx-auto px-4 py-20">
-              <div className="max-w-2xl mx-auto text-center">
+              <div className="max-w-4xl mx-auto text-center">
                 <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-8">
                   <div className="text-red-400 text-6xl mb-4">⚠️</div>
                   <h2 className="text-2xl font-semibold mb-4">Conversion Failed</h2>
-                  <p className="text-gray-400 mb-6">{conversionState.error}</p>
+                  <div className="text-gray-300 mb-6 text-left bg-gray-900/50 rounded-lg p-4 max-w-2xl mx-auto">
+                    <pre className="whitespace-pre-wrap text-sm">{conversionState.error}</pre>
+                  </div>
+                  
+                  {/* Helpful tips */}
+                  <div className="text-left bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-6 max-w-2xl mx-auto">
+                    <h3 className="text-lg font-semibold text-blue-400 mb-2">💡 Troubleshooting Tips:</h3>
+                    <ul className="text-sm text-gray-300 space-y-1">
+                      <li>• Make sure the playlist is <strong>public</strong> and accessible</li>
+                      <li>• Copy the URL directly from the streaming platform</li>
+                      <li>• Check that your API keys are correctly configured</li>
+                      <li>• Try with a different public playlist to test</li>
+                      <li>• Restart the server if you recently updated API keys</li>
+                    </ul>
+                  </div>
+                  
                   <button
                     onClick={handleReset}
                     className="bg-primary-600 hover:bg-primary-700 px-6 py-3 rounded-xl font-medium transition-colors"
