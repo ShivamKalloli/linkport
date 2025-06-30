@@ -11,33 +11,33 @@ export const apiKeys = {
   youtube: {
     apiKey: process.env.YOUTUBE_API_KEY,
   },
-  soundcloud: {
-    clientId: process.env.SOUNDCLOUD_CLIENT_ID,
-  },
 };
 
 // Validate required API keys
 export const validateApiKeys = () => {
+  const configured = [];
   const missing = [];
   
-  if (!apiKeys.spotify.clientId || !apiKeys.spotify.clientSecret) {
+  if (apiKeys.spotify.clientId && apiKeys.spotify.clientSecret) {
+    configured.push('Spotify API');
+  } else {
     missing.push('Spotify API credentials');
   }
   
-  if (!apiKeys.youtube.apiKey) {
+  if (apiKeys.youtube.apiKey) {
+    configured.push('YouTube API');
+  } else {
     missing.push('YouTube API key');
   }
   
-  if (!apiKeys.soundcloud.clientId) {
-    missing.push('SoundCloud API key');
+  if (configured.length > 0) {
+    console.log('✅ Configured APIs:', configured.join(', '));
   }
   
   if (missing.length > 0) {
     console.warn('⚠️  Missing API keys for:', missing.join(', '));
-    console.warn('⚠️  Some features may not work properly');
-    return false;
+    console.warn('⚠️  Running in demo mode for missing APIs');
   }
   
-  console.log('✅ All API keys configured');
-  return true;
+  return configured.length > 0;
 };

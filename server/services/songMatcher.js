@@ -1,6 +1,5 @@
 import { searchSpotifyTracks } from './spotifyApi.js';
 import { searchYouTubeTracks } from './youtubeApi.js';
-import { searchSoundCloudTracks } from './soundcloudApi.js';
 import * as Fuzz from 'fuzzball';
 
 /**
@@ -18,9 +17,6 @@ export async function matchSongs(songs, targetPlatform) {
         break;
       case 'youtube':
         matches = await searchYouTubeTracks(songs);
-        break;
-      case 'soundcloud':
-        matches = await searchSoundCloudTracks(songs);
         break;
       case 'apple':
         // Apple Music API is more restrictive, fall back to mock
@@ -114,7 +110,7 @@ function generateMockSearchResults(originalSong, platform) {
   const variations = [];
   
   // Perfect match (high confidence)
-  if (Math.random() > 0.2) {
+  if (Math.random() > 0.15) {
     variations.push({
       title: originalSong.title,
       artist: originalSong.artist,
@@ -137,6 +133,15 @@ function generateMockSearchResults(originalSong, platform) {
       title: `${originalSong.title} (Remastered)`,
       artist: originalSong.artist,
       album: `${originalSong.album || 'Unknown Album'} (Remastered)`
+    });
+  }
+  
+  // Live version
+  if (Math.random() > 0.5) {
+    variations.push({
+      title: `${originalSong.title} (Live)`,
+      artist: originalSong.artist,
+      album: 'Live Album'
     });
   }
   

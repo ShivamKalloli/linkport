@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, ArrowRight, Music, Play, Cloud, Copy } from 'lucide-react';
+import { Link, ArrowRight, Music, Copy } from 'lucide-react';
 import { Platform, PlatformInfo } from '../types';
 
 interface ConversionFormProps {
@@ -24,14 +24,6 @@ const platforms: PlatformInfo[] = [
     supportedAsTarget: true,
   },
   {
-    id: 'soundcloud',
-    name: 'SoundCloud',
-    icon: '☁️',
-    color: 'bg-orange-500',
-    supportedAsSource: true,
-    supportedAsTarget: true,
-  },
-  {
     id: 'apple',
     name: 'Apple Music',
     icon: '🍎',
@@ -43,8 +35,7 @@ const platforms: PlatformInfo[] = [
 
 const sampleUrls = [
   'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M',
-  'https://music.youtube.com/playlist?list=PLrAl6rYgs4IvGFBDEaVGFXt6k2GiOFWjS',
-  'https://soundcloud.com/user/sets/playlist-name'
+  'https://music.youtube.com/playlist?list=PLrAl6rYgs4IvGFBDEaVGFXt6k2GiOFWjS'
 ];
 
 const ConversionForm: React.FC<ConversionFormProps> = ({ onStartConversion }) => {
@@ -54,8 +45,7 @@ const ConversionForm: React.FC<ConversionFormProps> = ({ onStartConversion }) =>
 
   const detectPlatform = (url: string): Platform | null => {
     if (url.includes('spotify.com')) return 'spotify';
-    if (url.includes('youtube.com') || url.includes('youtu.be')) return 'youtube';
-    if (url.includes('soundcloud.com')) return 'soundcloud';
+    if (url.includes('youtube.com') || url.includes('youtu.be') || url.includes('music.youtube.com')) return 'youtube';
     if (url.includes('music.apple.com')) return 'apple';
     return null;
   };
@@ -116,7 +106,7 @@ const ConversionForm: React.FC<ConversionFormProps> = ({ onStartConversion }) =>
             </div>
             
             <p className="text-gray-400 text-sm mt-3">
-              Supports public and unlisted playlists from Spotify, YouTube Music, and SoundCloud
+              Supports public and unlisted playlists from Spotify and YouTube Music
             </p>
 
             {/* Sample URLs */}
@@ -145,7 +135,7 @@ const ConversionForm: React.FC<ConversionFormProps> = ({ onStartConversion }) =>
               <h2 className="text-xl font-semibold">Convert To</h2>
             </div>
             
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {platforms.filter(p => p.supportedAsTarget).map((platform) => (
                 <button
                   key={platform.id}
@@ -204,7 +194,7 @@ const ConversionForm: React.FC<ConversionFormProps> = ({ onStartConversion }) =>
         {/* Supported Platforms Info */}
         <div id="supported-platforms" className="mt-16">
           <h3 className="text-lg font-semibold mb-6 text-center">Supported Platforms</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {platforms.map((platform) => (
               <div
                 key={platform.id}
@@ -222,6 +212,12 @@ const ConversionForm: React.FC<ConversionFormProps> = ({ onStartConversion }) =>
                 </div>
               </div>
             ))}
+          </div>
+          
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-400">
+              🎵 <strong>Coming Soon:</strong> Apple Music source support, SoundCloud integration, and more platforms!
+            </p>
           </div>
         </div>
       </div>

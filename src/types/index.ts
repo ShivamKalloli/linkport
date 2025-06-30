@@ -4,6 +4,9 @@ export interface Song {
   album?: string;
   duration?: number;
   originalUrl?: string;
+  spotifyUrl?: string;
+  youtubeUrl?: string;
+  soundcloudUrl?: string;
 }
 
 export interface Playlist {
@@ -54,7 +57,7 @@ export interface ConversionState {
   error: string | null;
 }
 
-export type Platform = 'spotify' | 'youtube' | 'soundcloud' | 'apple';
+export type Platform = 'spotify' | 'youtube' | 'apple';
 
 export interface PlatformInfo {
   id: Platform;
