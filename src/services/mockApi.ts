@@ -206,6 +206,18 @@ async function generateQRCode(url: string): Promise<string> {
 }
 
 export async function mockConvertPlaylist(sourceUrl: string, targetPlatform: string) {
+  // Validate inputs
+  if (!sourceUrl || !targetPlatform) {
+    throw new Error('Missing required parameters: sourceUrl and targetPlatform are required');
+  }
+
+  // Validate URL format
+  try {
+    new URL(sourceUrl);
+  } catch (urlError) {
+    throw new Error('Invalid URL format. Please provide a valid playlist URL.');
+  }
+
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 3000));
   
@@ -285,6 +297,7 @@ export async function mockConvertPlaylist(sourceUrl: string, targetPlatform: str
     };
     
   } catch (error) {
+    console.error('Mock API Error:', error);
     throw new Error(`Failed to convert playlist: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }

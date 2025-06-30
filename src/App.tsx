@@ -29,7 +29,7 @@ function App() {
     });
 
     try {
-      // Use mock API for Netlify deployment
+      // Always use mock API for consistent behavior across all deployments
       const data = await mockConvertPlaylist(sourceUrl, targetPlatform);
       
       setConversionState({
