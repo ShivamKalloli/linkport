@@ -57,7 +57,7 @@ export interface ConversionState {
   error: string | null;
 }
 
-export type Platform = 'spotify' | 'youtube' | 'apple';
+export type Platform = 'spotify' | 'youtube' | 'soundcloud' | 'apple';
 
 export interface PlatformInfo {
   id: Platform;

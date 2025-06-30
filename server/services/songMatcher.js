@@ -1,82 +1,11 @@
-import { searchSpotifyTracks } from './spotifyApi.js';
-import { searchYouTubeTracks } from './youtubeApi.js';
 import * as Fuzz from 'fuzzball';
 
 /**
- * Match songs on target platform using real APIs
+ * Match songs on target platform using mock data
  */
 export async function matchSongs(songs, targetPlatform) {
   console.log(`🔍 Matching ${songs.length} songs for ${targetPlatform}`);
   
-  try {
-    let matches;
-    
-    switch (targetPlatform) {
-      case 'spotify':
-        matches = await searchSpotifyTracks(songs);
-        break;
-      case 'youtube':
-        matches = await searchYouTubeTracks(songs);
-        break;
-      case 'apple':
-        // Apple Music API is more restrictive, fall back to mock
-        matches = await mockMatchSongs(songs, targetPlatform);
-        break;
-      default:
-        throw new Error(`Unsupported target platform: ${targetPlatform}`);
-    }
-    
-    // Enhance matches with fuzzy matching confidence
-    const enhancedMatches = matches.map(match => {
-      if (match.matchedSong && match.originalSong) {
-        const titleScore = Fuzz.ratio(
-          match.originalSong.title.toLowerCase(),
-          match.matchedSong.title.toLowerCase()
-        );
-        const artistScore = Fuzz.ratio(
-          match.originalSong.artist.toLowerCase(),
-          match.matchedSong.artist.toLowerCase()
-        );
-        
-        // Weighted average (title is more important)
-        const fuzzyConfidence = (titleScore * 0.7 + artistScore * 0.3) / 100;
-        
-        // Use the higher of API confidence or fuzzy confidence
-        match.confidence = Math.max(match.confidence || 0, fuzzyConfidence);
-        
-        // Adjust status based on confidence
-        if (match.confidence > 0.9) {
-          match.status = 'matched';
-        } else if (match.confidence > 0.7) {
-          match.status = 'partial';
-        } else {
-          match.status = 'not_found';
-        }
-      }
-      
-      return match;
-    });
-    
-    const stats = {
-      matched: enhancedMatches.filter(m => m.status === 'matched').length,
-      partial: enhancedMatches.filter(m => m.status === 'partial').length,
-      notFound: enhancedMatches.filter(m => m.status === 'not_found').length,
-    };
-    
-    console.log(`✅ Matching complete: ${stats.matched} matched, ${stats.partial} partial, ${stats.notFound} not found`);
-    
-    return enhancedMatches;
-  } catch (error) {
-    console.error('❌ Song matching failed:', error.message);
-    
-    // Fallback to mock matching if API fails
-    console.log('🔄 Falling back to mock matching...');
-    return await mockMatchSongs(songs, targetPlatform);
-  }
-}
-
-// Fallback mock matching (improved version of original)
-async function mockMatchSongs(songs, targetPlatform) {
   const matches = [];
   
   for (const song of songs) {
@@ -102,6 +31,14 @@ async function mockMatchSongs(songs, targetPlatform) {
       });
     }
   }
+  
+  const stats = {
+    matched: matches.filter(m => m.status === 'matched').length,
+    partial: matches.filter(m => m.status === 'partial').length,
+    notFound: matches.filter(m => m.status === 'not_found').length,
+  };
+  
+  console.log(`✅ Matching complete: ${stats.matched} matched, ${stats.partial} partial, ${stats.notFound} not found`);
   
   return matches;
 }
