@@ -34,7 +34,10 @@ async function getSpotifyToken() {
     console.log('✅ Spotify token obtained');
     return spotifyToken;
   } catch (error) {
-    console.error('❌ Failed to get Spotify token:', error.response?.data || error.message);
+    console.error('❌ Failed to get Spotify token:');
+    console.error('HTTP Status:', error.response?.status);
+    console.error('Response Data:', error.response?.data);
+    console.error('Error Message:', error.message);
     throw new Error('Failed to authenticate with Spotify');
   }
 }
@@ -58,6 +61,8 @@ export async function parseSpotifyPlaylist(url) {
     
     // Get playlist details
     console.log('🔄 Fetching playlist details from Spotify API...');
+    console.log('🔗 Request URL:', `https://api.spotify.com/v1/playlists/${playlistId}`);
+    
     const playlistResponse = await axios.get(
       `https://api.spotify.com/v1/playlists/${playlistId}`,
       {
@@ -114,14 +119,24 @@ export async function parseSpotifyPlaylist(url) {
       totalDuration: songs.reduce((total, song) => total + (song.duration || 0), 0),
     };
   } catch (error) {
-    console.error('❌ Spotify API error:', error.response?.data || error.message);
+    console.error('❌ Spotify API error details:');
+    console.error('HTTP Status Code:', error.response?.status);
+    console.error('HTTP Status Text:', error.response?.statusText);
+    console.error('Response Headers:', error.response?.headers);
+    console.error('Response Data:', JSON.stringify(error.response?.data, null, 2));
+    console.error('Request Config:', {
+      url: error.config?.url,
+      method: error.config?.method,
+      headers: error.config?.headers
+    });
+    console.error('Error Message:', error.message);
+    
+    const playlistId = extractSpotifyPlaylistId(url);
+    console.error('❌ Playlist ID that failed:', playlistId);
+    console.error('❌ Full URL that failed:', url);
     
     if (error.response?.status === 404) {
-      const playlistId = extractSpotifyPlaylistId(url);
-      console.error('❌ Playlist ID that failed:', playlistId);
-      console.error('❌ Full URL that failed:', url);
-      
-      throw new Error(`Spotify playlist not found. This could mean:
+      throw new Error(`Spotify playlist not found (HTTP 404). This could mean:
 • The playlist is private or deleted
 • The URL is incorrect or malformed
 • The playlist ID "${playlistId}" doesn't exist
@@ -134,13 +149,15 @@ Please ensure:
 
 Example of a valid URL: https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M`);
     } else if (error.response?.status === 401) {
-      throw new Error('Spotify authentication failed. Please check your API credentials in the .env file and restart the server.');
+      throw new Error('Spotify authentication failed (HTTP 401). Please check your API credentials in the .env file and restart the server.');
     } else if (error.response?.status === 403) {
-      throw new Error('Access forbidden. Your Spotify API credentials may not have the required permissions.');
+      throw new Error('Access forbidden (HTTP 403). Your Spotify API credentials may not have the required permissions.');
     } else if (error.response?.status === 429) {
-      throw new Error('Spotify API rate limit exceeded. Please wait a moment and try again.');
+      throw new Error('Spotify API rate limit exceeded (HTTP 429). Please wait a moment and try again.');
+    } else if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+      throw new Error('Network error: Unable to connect to Spotify API. Please check your internet connection.');
     } else {
-      throw new Error(`Failed to parse Spotify playlist: ${error.message}`);
+      throw new Error(`Failed to parse Spotify playlist: ${error.message} (HTTP ${error.response?.status || 'Unknown'})`);
     }
   }
 }
