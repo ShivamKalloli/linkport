@@ -19,7 +19,7 @@
 
 ## 🚀 Live Demo
 
-**Try LinkPort now:** [hilarious-lamington-f4f54b.netlify.app](hilarious-lamington-f4f54b.netlify.app)
+**Try LinkPort now:** [[hilarious-lamington-f4f54b.netlify.app](https://hilarious-lamington-f4f54b.netlify.app/)](hilarious-lamington-f4f54b.netlify.app)
 
 Test with these sample URLs:
 
